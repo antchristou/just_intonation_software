@@ -13,14 +13,15 @@ int calculateIndex(int row_index, int column_index) {
   //  Serial.printf("%d %d\n",row_index,column_index);
     // todo: fix this 
    if (column_index >= 8) {
-    
-      return (15 - column_index) * 16 + (row_index + 1);
-      if (row_index % 2 == 0) { // Even row index
-        
-        return (row_index * CALC_COLUMNS + (CALC_COLUMNS - column_index - 1))+256;
-    } else { // Odd row index
-        return (row_index * CALC_COLUMNS + column_index)+255;
-    }
+
+      int row_offset = 511 - (8 * row_index);
+      int singular_value;
+    if(row_index % 2 == 0)
+        singular_value = row_offset - (column_index - 8);
+    else
+        singular_value = row_offset - (15 - column_index);
+
+     
    }
 
 

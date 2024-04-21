@@ -34,7 +34,7 @@ int numShapes = 0;
 
 
 bool cursorCurrentlyOn = false;
-const bool MIDI_MODE = true;
+const bool MIDI_MODE = false;
 
  uint32_t colors[] = {
   matrix.Color(178, 0, 178), matrix.Color(133,235,217),matrix.Color(253,162,255),matrix.Color(0, 191, 255),matrix.Color(255, 165, 0),matrix.Color(255, 20, 147)};
