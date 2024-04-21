@@ -13,8 +13,8 @@
 const int LATTICE_X_DIM = 20;
 const int LATTICE_Y_DIM = 30;
 int Lattice_TUNING = FIVE_LIMIT_JUST;
-const double FREQ_UPPER_BOUND = 880;
-const double FREQ_LOWER_BOUND = 220;
+const double FREQ_UPPER_BOUND = 1500;
+const double FREQ_LOWER_BOUND = 120;
 int GEN_COUNT = 0;
 
 typedef struct {

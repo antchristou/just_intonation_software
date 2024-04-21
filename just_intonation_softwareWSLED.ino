@@ -38,10 +38,10 @@ bool cursorCurrentlyOn = false;
 const bool MIDI_MODE = false;
 
  uint32_t colors[] = {
-  matrix.Color(178, 0, 178), matrix.Color(133,235,217),matrix.Color(253,162,255),matrix.Color(0, 191, 255),matrix.Color(4, 148, 148),matrix.Color(255, 20, 147)};
+  matrix.Color(178, 0, 178), matrix.Color(133,235,217),matrix.Color(92, 92, 92),matrix.Color(253,162,255),matrix.Color(0, 191, 255),matrix.Color(116, 138, 166)};
 
  uint32_t la_monte_colors[] = {
-  matrix.Color(255,0,0),matrix.Color(237,103,104), matrix.Color(255,127,80),matrix.Color(221,153,51),matrix.Color(242,204,132),matrix.Color(255,155,0)};
+  matrix.Color(255,0,0),matrix.Color(237,103,104), matrix.Color(92, 92, 92),matrix.Color(221,153,51),matrix.Color(242,204,132),matrix.Color(255,155,0)};
 
  uint32_t *colorPointer = colors;
  uint32_t *oppositeColorPointer = la_monte_colors;
@@ -124,6 +124,7 @@ void copyLightsArray(uint32_t arr1[ROWS][COLUMNS], uint32_t arr2[ROWS][COLUMNS])
 void loop() {
   //Serial.println(blocksInShape);
   readJoystick(&joystickVal, &buttons);
+//  Serial.println(buttons);
   //matrix.fillScreen(0);
   //matrix.setCursor(x, 0);
   //  Serial.printf("MOVING COR %d %d %d\n", shiftMode, currCoords[0], currCoords[1]);
