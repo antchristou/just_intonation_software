@@ -1,5 +1,5 @@
 #include "draw_helpers.h"
-
+#include "matrix_mapping.h"
 byte drawingMemory[NUM_LEDS*3];         //  3 bytes per LED
 DMAMEM byte displayMemory[NUM_LEDS*12]; // 12 bytes per LED
 
@@ -9,42 +9,15 @@ WS2812Serial matrix(NUM_LEDS, displayMemory, drawingMemory, PIN, WS2812_GRB);
 
 // calculate which LED number a given x,y coord is for calling into matrix 
 
-int calculateIndex(int row_index, int column_index) {
-  //  Serial.printf("%d %d\n",row_index,column_index);
-    // todo: fix this 
-   if (column_index >= 8) {
-
-      int row_offset = 511 - (8 * row_index);
-      int singular_value;
-    if(row_index % 2 == 0)
-        singular_value = row_offset - (column_index - 8);
-    else
-        singular_value = row_offset - (15 - column_index);
-
-     
-   }
-
-
-    // left matrix indexing 
-    if (row_index % 2 == 0) { // Even row index
-        return row_index * CALC_COLUMNS + (CALC_COLUMNS - column_index - 1);
-    } else { // Odd row index
-        return row_index * CALC_COLUMNS + column_index;
-    }
-}
-// mapping functions for tiled LED matrices
-int mapCoords(int x, int y) {
-
-    int mapped_index = calculateIndex(x,y);
-    //Serial.printf("mapped: %d\n", mapped_index);
-    return mapped_index;
-} 
 
 
 // BLOCK_SIZExBLOCK_SIZE basic shapes
 #define BLOCK_SIZE 3
-void draw(int x, int y,  uint32_t color)
+void draw(int x, int y,  uint32_t color, bool doShow)
 {
+
+    if(x < 0)
+         Serial.printf("NOT SUPPOSED TO %d %d!!!!!\n",x, y);
   // MAP VALUES as block expects 
 //  Serial.printf("%d %d\n",x,y);
   int ledNum = -1;
@@ -54,11 +27,12 @@ void draw(int x, int y,  uint32_t color)
     {
      //    Serial.printf("DRAWING BIGGER AT %d %d\n",i,j);
         
-        ledNum = mapCoords(i,j);
+        ledNum = lookup(i,j);
         matrix.setPixel(ledNum,color);
      }
     }
-  matrix.show();
+  if(doShow)
+    matrix.show();
 }
 
  // todo: move matrix code here, replace calls 
@@ -71,6 +45,8 @@ void draw(int x, int y,  uint32_t color)
 //  matrix.setTextWrap(false);
   matrix.setBrightness(10);
 //  matrix.setTextColor(initial_text_color);
+
+   // testLEDs();
  }
 
  
@@ -82,9 +58,27 @@ int getMatrixWidth()
 // note: flipped to match LEDs
 int getTrueHeight()
 {
-  return COLUMNS/BLOCK_SIZE;
+  return ROWS/BLOCK_SIZE;
 }
 int getTrueWidth()
 {
-  return ROWS/BLOCK_SIZE;
+  return COLUMNS/BLOCK_SIZE;
+}
+
+int getBlockSize()
+{
+  return BLOCK_SIZE;
+}
+
+
+// test all LEDS are working by lighting them up
+void testLEDs()
+{
+  Serial.println("testing...");
+  for(int i =0; i < NUM_LEDS;i++)
+  {
+    matrix.setPixel(i,matrix.Color(255,255,255));
+    matrix.show();
+    delay(100);
+  }
 }

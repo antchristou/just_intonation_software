@@ -9,8 +9,10 @@
 // used for indexing 
 #define CALC_COLUMNS 8
 
-#define ROWS 32
-#define COLUMNS 8//16
+#define ROWS 16
+#define COLUMNS 32
+// 16x32
+
 
 #define WHITE_COL matrix.Color(255,255,255)
 #define OFF_COL matrix.Color(0,0,0)
@@ -22,14 +24,14 @@
 #endif
 
 
-const int NUM_LEDS = 256; 
+const int NUM_LEDS = 512; 
 
 
 extern WS2812Serial matrix;
 
 // interpolates raw coordinates and maps onto larger shape that gets drawn 
 // ex: if block size is 3x3, increase by 1 moves by 3 etc
-void draw(int x, int y,  uint32_t color);
+void draw(int x, int y,  uint32_t color,bool doShow);
 
 void setup_matrix(uint32_t initial_text_color);
 
@@ -38,3 +40,7 @@ int getMatrixWidth();
 // get height and width accounting for block size
 int getTrueHeight();
 int getTrueWidth();
+
+void testLEDs();
+
+int getBlockSize();

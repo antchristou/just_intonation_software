@@ -17,6 +17,10 @@ JoystickController joystick(myusb);
 
 int currMoving = NOT_MOVING;
 
+// if true, flip inputs to match layout of board 
+const bool HORIZONTAL_MODE = true;
+
+
 // MATRIX DECLARATION:
 // Parameter 1 = width of NeoPixel matrix
 // Parameter 2 = height of matrix

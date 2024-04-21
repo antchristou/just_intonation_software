@@ -9,8 +9,9 @@
 
 
 //todo: possibly hard code this less badly...
-const int LATTICE_X_DIM = 10;
-const int LATTICE_Y_DIM = 8;
+// change these TODO 
+const int LATTICE_X_DIM = 20;
+const int LATTICE_Y_DIM = 30;
 int Lattice_TUNING = FIVE_LIMIT_JUST;
 const double FREQ_UPPER_BOUND = 880;
 const double FREQ_LOWER_BOUND = 220;

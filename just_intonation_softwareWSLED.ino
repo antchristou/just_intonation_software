@@ -3,7 +3,8 @@
 #include "joystick.h"
 #include "just_intonate.h"
 #include "draw_helpers.h"
-#include "audio_synthesis.h"
+#include "audio_synthesis_v2.h"
+#include "matrix_mapping.h"
 
 #include <elapsedMillis.h>
 
@@ -37,7 +38,7 @@ bool cursorCurrentlyOn = false;
 const bool MIDI_MODE = false;
 
  uint32_t colors[] = {
-  matrix.Color(178, 0, 178), matrix.Color(133,235,217),matrix.Color(253,162,255),matrix.Color(0, 191, 255),matrix.Color(255, 165, 0),matrix.Color(255, 20, 147)};
+  matrix.Color(178, 0, 178), matrix.Color(133,235,217),matrix.Color(253,162,255),matrix.Color(0, 191, 255),matrix.Color(4, 148, 148),matrix.Color(255, 20, 147)};
 
  uint32_t la_monte_colors[] = {
   matrix.Color(255,0,0),matrix.Color(237,103,104), matrix.Color(255,127,80),matrix.Color(221,153,51),matrix.Color(242,204,132),matrix.Color(255,155,0)};
@@ -93,6 +94,8 @@ void setup() {
   setupJoystick();
   setupLattice();
   setup_audio();
+
+  generate_mapping();
 }
 
 int x    = getMatrixWidth(); 
@@ -101,11 +104,9 @@ int pass = 0;
 
 
 // TODO: where to set curr coords
-int currCoords[2] = {0,0};//{ROWS/2,COLUMNS/2};
+int currCoords[2] = {ROWS/2/getBlockSize(),COLUMNS/2/getBlockSize()};//{ROWS/2,COLUMNS/2};
 
 int prevDir = NOT_MOVING;
-
-
 
 // copy lights for bookkeeping 
 void copyLightsArray(uint32_t arr1[ROWS][COLUMNS], uint32_t arr2[ROWS][COLUMNS])
@@ -127,7 +128,9 @@ void loop() {
   //matrix.setCursor(x, 0);
   //  Serial.printf("MOVING COR %d %d %d\n", shiftMode, currCoords[0], currCoords[1]);
     if(!shiftMode)
+    {
       movePixel();
+    }
     else
       moveShape();
 
@@ -136,11 +139,10 @@ void loop() {
       if(buttons == 4 && !shiftMode && numShapes != 0)
       {
 
-        draw(currCoords[0],currCoords[1],previousLightsOn[currCoords[0]][currCoords[1]]);
+        draw(currCoords[0],currCoords[1],previousLightsOn[currCoords[0]][currCoords[1]],true);
         //revert colors to before current shape was drawn
         turnOnPrevious();
         copyLightsArray(previousLightsOn,lightsOn);
-        
         shiftMode = true;
    
    
@@ -152,7 +154,7 @@ void loop() {
         // keep track of previously drawn shape
         
         copyArray(previousShapeIndices,shiftShapeIndices);
-       
+        copyArray(shiftShapeIndices,newShape);
       }
   
       // if delete button is held unlight curr shape
@@ -176,7 +178,7 @@ void loop() {
         {
           hasOverlap = true;
         }
-        draw(currCoords[0], currCoords[1],  colorPointer[curr_color]);
+        draw(currCoords[0], currCoords[1],  colorPointer[curr_color],true);
         Serial.printf("DRAWING %d %d\n",currCoords[0],currCoords[1]);
         lightsOn[currCoords[0]][currCoords[1]] = colorPointer[curr_color];
         currentShapeIndices[blocksInShape][0] = currCoords[0];
@@ -189,7 +191,7 @@ void loop() {
      {
       for(int i = 0; i < 4; i++)
       {
-          draw(shiftShapeIndices[i][0],shiftShapeIndices[i][1],colorPointer[curr_color]);
+          draw(shiftShapeIndices[i][0],shiftShapeIndices[i][1],colorPointer[curr_color],true);
          // matrix.drawPixel(shiftShapeIndices[i][0],shiftShapeIndices[i][1],colors[curr_color]);
           lightsOn[shiftShapeIndices[i][0]][shiftShapeIndices[i][1]] = colorPointer[curr_color];
       }
@@ -267,7 +269,6 @@ void loop() {
       
      else
       {
-     
 //        currTime = micros();
         blinkCursor();
       //  unsigned long endTime = micros();
@@ -285,8 +286,8 @@ bool checkCoords(int x, int y)
   // prevent movement off of board
   int trueWidth = getTrueWidth();
   int trueHeight = getTrueHeight();
-  Serial.printf("BOUNDS: %d %d %d %d\n", trueWidth,trueHeight,x,y0);
-  if( (x < 0 || x >= trueWidth) || (y < 0 || y >= trueHeight))
+ // Serial.printf("BOUNDS: %d %d %d %d\n", trueHeight,trueWidth,x,y);
+  if( (x < 0 || x >= trueHeight) || (y < 0 || y >= trueWidth))
     return false;
 
 //  // and prevent movement off of preexisting shape if not first shape
@@ -498,7 +499,7 @@ void movePixel()
       {
       if(lightsOn[currCoords[0]][currCoords[1]] == OFF_COL)
       {
-        draw(currCoords[0],currCoords[1],OFF_COL);
+        draw(currCoords[0],currCoords[1],OFF_COL,true);
      //   matrix.show();
        // matrix.drawPixel(currCoords[0],currCoords[1],OFF_COL);
       }
@@ -506,7 +507,7 @@ void movePixel()
       // light is currently part of shape, revert to earlier color
       if(lightsOn[currCoords[0]][currCoords[1]] != OFF_COL)
       {
-        draw(currCoords[0],currCoords[1],lightsOn[currCoords[0]][currCoords[1]]);
+        draw(currCoords[0],currCoords[1],lightsOn[currCoords[0]][currCoords[1]],true);
     //    matrix.show();
         //matrix.drawPixel(currCoords[0],currCoords[1],lightsOn[currCoords[0]][currCoords[1]]);
       }
@@ -515,15 +516,17 @@ void movePixel()
             {
               if(lightsOn[currCoords[0]][currCoords[1]] == OFF_COL)
               {
-                Serial.printf("THINKS WHAT YOURE MOVING OFF IS OFF");
-                draw(currCoords[0],currCoords[1],OFF_COL);
+            
+                Serial.printf("THINKS WHAT YOURE MOVING OFF IS LIGHTS OFF\n");
+                draw(currCoords[0],currCoords[1],OFF_COL,true);
                // matrix.show();
             //  matrix.drawPixel(currCoords[0],currCoords[1],OFF_COL);      
               }
               if(lightsOn[currCoords[0]][currCoords[1]] != OFF_COL)
               {
+                  
                 Serial.printf("COLOR AS OF MOVING OFF %d",lightsOn[currCoords[0]][currCoords[1]]);
-                draw(currCoords[0],currCoords[1],lightsOn[currCoords[0]][currCoords[1]]);
+                draw(currCoords[0],currCoords[1],lightsOn[currCoords[0]][currCoords[1]],true);
             //    matrix.show();
                // matrix.drawPixel(currCoords[0],currCoords[1],lightsOn[currCoords[0]][currCoords[1]]);
               }
@@ -541,11 +544,12 @@ void movePixel()
 // move shape itself for shift mode
  void moveShape()
  {
+     
       bool outOfBounds = false;
       // TODO: shape has 4 blocks
       int x_shift = 0;
       int y_shift = 0;
-      
+      Serial.println("copying..");
       copyArray(shiftShapeIndices,newShape);
     
       if(joystickVal == LEFT_DIR && (prevDir != LEFT_DIR || moveTimer > MOVE_RESET_TIME))
@@ -589,8 +593,8 @@ void movePixel()
           {
             if(lightsOn[newShape[i][0]][newShape[i][1]] == OFF_COL)
             {
-        
-              draw(newShape[i][0],newShape[i][1],OFF_COL);
+           
+              draw(newShape[i][0],newShape[i][1],OFF_COL,true);
             //  matrix.show();
         //      matrix.drawPixel(newShape[i][0],newShape[i][1],OFF_COL);
             }
@@ -603,8 +607,9 @@ void movePixel()
           {
             if(lightsOn[newShape[i][0]][newShape[i][1]] != OFF_COL)
             {
+                
              // Serial.printf("%d %d\n",newShape[i][0],newShape[i][1]);
-             draw(newShape[i][0],newShape[i][1],lightsOn[newShape[i][0]][newShape[i][1]]);
+             draw(newShape[i][0],newShape[i][1],lightsOn[newShape[i][0]][newShape[i][1]],true);
           //   matrix.show();
             //  matrix.drawPixel(newShape[i][0],newShape[i][1],lightsOn[newShape[i][0]][newShape[i][1]]);
             }
@@ -668,9 +673,10 @@ void deleteShape()
   Serial.printf("DELETING CURR SHAPE %d\n",blocksInShape);
   for(int i =0; i < blocksInShape;i++)
   {
+     
       // revert to what was there originally 
       draw(currentShapeIndices[i][0],currentShapeIndices[i][1],
-      previousLightsOn[currentShapeIndices[i][0]][currentShapeIndices[i][1]]);
+      previousLightsOn[currentShapeIndices[i][0]][currentShapeIndices[i][1]],true);
    
       lightsOn[currentShapeIndices[i][0]][currentShapeIndices[i][1]] = previousLightsOn[currentShapeIndices[i][0]][currentShapeIndices[i][1]];
 
@@ -688,9 +694,11 @@ void blinkCursor()
   {
       if(shiftMode)
       { 
-      // Serial.println(newShape[0][0]);
+         // Serial.printf("ok 8 .. %d %d ",currCoords[0],currCoords[1]);
+       Serial.printf("new shape %d \n",newShape[0][0]);
         for(int z = 0; z < 4; z++)
-            draw(newShape[z][0],newShape[z][1],OFF_COL);
+            draw(newShape[z][0],newShape[z][1],OFF_COL,false);
+        matrix.show();
           //  matrix.drawPixel(newShape[z][0],newShape[z][1],OFF_COL);
   //      cursorCurrentlyOn = false;
       //  matrix.show();
@@ -699,8 +707,8 @@ void blinkCursor()
        {
            // Serial.printf("making NON WHITE in new shape bklin\n");
           //    Serial.println("trying to draw off...");
-                 
-              draw(currCoords[0],currCoords[1],OFF_COL);
+//                   Serial.printf("ok.9. %d %d ",currCoords[0],currCoords[1]);
+              draw(currCoords[0],currCoords[1],OFF_COL,true);
        //       cursorCurrentlyOn = false; 
           
            
@@ -715,8 +723,9 @@ void blinkCursor()
       {
         for(int z = 0; z < 4; z++)
         {
+//            Serial.printf("ok 10.. %d %d \n",newShape[z][0],newShape[z][1]);
           // TODO: ISSUE HERE NEW SHAPE GETS OLDER SHAPE SOMEHOW
-            draw(newShape[z][0],newShape[z][1],WHITE_COL);
+            draw(newShape[z][0],newShape[z][1],WHITE_COL,true);
        //     matrix.drawPixel(newShape[z][0],newShape[z][1],WHITE_COL);
         }
       //  cursorCurrentlyOn = true;
@@ -724,9 +733,9 @@ void blinkCursor()
       }
       else
       {
-            // Serial.printf("making white in blink %d %d\n",currCoords[0],currCoords[1]);
+//            Serial.printf("ok 11.. %d %d\n ",currCoords[0],currCoords[1]);  // Serial.printf("making white in blink %d %d\n",currCoords[0],currCoords[1]);
       //   Serial.println("trying to draw white...");
-       draw(currCoords[0],currCoords[1],WHITE_COL);
+       draw(currCoords[0],currCoords[1],WHITE_COL,true);
      //  cursorCurrentlyOn = true; 
       
      //   matrix.drawPixel(currCoords[0],currCoords[1],WHITE_COL);
@@ -739,10 +748,12 @@ void swapTuningSystems()
 {
 
   // highlight most recent shape no matter where cursor is 
-  draw(currCoords[0],currCoords[1],previousLightsOn[currCoords[0]][currCoords[1]]);
+  draw(currCoords[0],currCoords[1],previousLightsOn[currCoords[0]][currCoords[1]],true);
   for(int z = 0; z < 4; z++)
-    draw(previousShapeIndices[z][0],previousShapeIndices[z][1],previousLightsOn[previousShapeIndices[z][0]][previousShapeIndices[z][1]]);
+    draw(previousShapeIndices[z][0],previousShapeIndices[z][1],previousLightsOn[previousShapeIndices[z][0]][previousShapeIndices[z][1]],true);
 
+  Serial.println("pre flash!");
+  
   // trigger clearing animation 
   flashWhite();
   Serial.println("Done flashing!");
@@ -762,8 +773,16 @@ void swapTuningSystems()
   Serial.printf("indices: %d %d %d %d %d %d %d %d\n",previousShapeIndices[0][0],previousShapeIndices[0][1],previousShapeIndices[1][0],previousShapeIndices[1][1],previousShapeIndices[2][0],
   previousShapeIndices[2][1],previousShapeIndices[3][0],previousShapeIndices[3][1]);
 
+
+   // swap color schemes
+   if(curr_color > 0)
+      fadeIntoColor(colorPointer[curr_color-1],oppositeColorPointer[0]);
+    else
+      fadeIntoColor(colorPointer[num_colors-1],oppositeColorPointer[0]);
   if(MIDI_MODE == false)
   {
+
+
   copyDoubleArray(sonifyFreqMode(previousShapeIndices),playingFreqChord);
   play_notes(nowPlaying,playingFreqChord);
   }
@@ -790,7 +809,7 @@ for(int i = 0; i < 4;i++)
     lightsOn[previousShapeIndices[i][0]][previousShapeIndices[i][1]] = colorPointer[0];
     Serial.printf("COLOR NIMBER AS OF %d %d\n", lightsOn[previousShapeIndices[i][0]][previousShapeIndices[i][1]],colorPointer[0]);
     previousLightsOn[previousShapeIndices[i][0]][previousShapeIndices[i][1]] = colorPointer[0];
-    draw(previousShapeIndices[i][0],previousShapeIndices[i][1],colorPointer[0]);
+    draw(previousShapeIndices[i][0],previousShapeIndices[i][1],colorPointer[0],true);
   }
   copyLightsArray(lightsOn,previousLightsOn);
   
@@ -817,40 +836,33 @@ void flashWhite()
 {
     currCoords[0] = previousShapeIndices[0][0];
     currCoords[1] = previousShapeIndices[0][1];
-
     Serial.println("pre white!");
 
-    
-    for(int x = 0; x < ROWS; x++)
+    int blockSize = getBlockSize();
+    for(int x = 0; x < ROWS/blockSize; x++)
     {
-      for(int y = 0; y < COLUMNS; y++)
+      for(int y = 0; y < COLUMNS/blockSize; y++)
       {
         if (!searchPreviousArray(x,y))
         {
-          
-          draw(x,y,WHITE_COL);
+          draw(x,y,WHITE_COL,true);
         }
        
       }
     }
+  
 
-    
-     
+    delay(1000);
     Serial.println("post white!");
-    // swap color schemes
-    if(curr_color > 0)
-      fadeIntoColor(colorPointer[curr_color-1],oppositeColorPointer[0]);
-    else
-      fadeIntoColor(colorPointer[num_colors-1],oppositeColorPointer[0]);
-
-    Serial.println("pott fade!");
-    for(int x = 0; x < ROWS; x++)
+  
+   
+    for(int x = 0; x < ROWS/blockSize; x++)
     {
-      for(int y = 0; y < COLUMNS; y++)
+      for(int y = 0; y < COLUMNS/blockSize; y++)
       {
         if (!searchPreviousArray(x,y))
         {
-          draw(x,y,OFF_COL);
+          draw(x,y,OFF_COL,true);
         }
       }
     }
@@ -859,21 +871,21 @@ void flashWhite()
 }
 
 // fade previous shape from color1 to color2
-void fadeIntoColor(uint16_t color1,uint16_t color2)
+void fadeIntoColor(uint32_t color1,uint32_t color2)
 {
-  colorFader = 0;
-  int FADE_TIME = 2000;
+ // colorFader = 0;
+  //int FADE_TIME = 2000;
  
-  Serial.println(color1);
-  //extract out RGB values, calcualte difference
-  uint16_t red1 =  (color1 >> 8) & 0xF8;  
-  uint16_t green1 =  (color1 >> 3) & 0xFC;  
-  uint16_t blue1 =  (color1 << 3) & 0xF8;
-
-  uint8_t  red2 = (color2 >> 8) & 0xF8;
-  uint8_t   green2 = (color2 >> 3) & 0xFC;  
-  uint8_t   blue2 = (color2 << 3) & 0xF8;
-      Serial.printf("GOAL COLOR %d %d %d \n",red2,green2,blue2);
+//  Serial.println(color1);
+//  //extract out RGB values, calcualte difference
+//  uint16_t red1 =  (color1 >> 8) & 0xF8;  
+//  uint16_t green1 =  (color1 >> 3) & 0xFC;  
+//  uint16_t blue1 =  (color1 << 3) & 0xF8;
+//
+//  uint8_t  red2 = (color2 >> 8) & 0xF8;
+//  uint8_t   green2 = (color2 >> 3) & 0xFC;  
+//  uint8_t   blue2 = (color2 << 3) & 0xF8;
+     // Serial.printf("GOAL COLOR %d %d %d \n",red2,green2,blue2);
 //  
 //  int distances[3] = {red1-red2,green1-green2,blue1-blue2};
 //  Serial.printf("dist %d %d %d\n",distances[0], distances[1],distances[2]);
@@ -904,9 +916,10 @@ void fadeIntoColor(uint16_t color1,uint16_t color2)
   for(int i =0; i< 4;i++)
     {
       
-      draw(previousShapeIndices[i][0], previousShapeIndices[i][1],color2);
+      draw(previousShapeIndices[i][0], previousShapeIndices[i][1],color2,false);
     }
-   //  matrix.show();
+     matrix.show();
+ 
   Serial.println("DONE FADING!");
   
   
@@ -919,7 +932,7 @@ void turnOnPrevious()
     for(int j = 0; j < COLUMNS; j++)
     {
       if(lightsOn[i][j] != previousLightsOn[i][j])
-        draw(i,j,previousLightsOn[i][j]);
+        draw(i,j,previousLightsOn[i][j],true);
     }
   }
 }
