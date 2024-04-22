@@ -29,6 +29,8 @@ const int NUM_LEDS = 512;
 
 extern WS2812Serial matrix;
 
+extern int STARTING_BRIGHTNESS;
+
 // interpolates raw coordinates and maps onto larger shape that gets drawn 
 // ex: if block size is 3x3, increase by 1 moves by 3 etc
 void draw(int x, int y,  uint32_t color,bool doShow);

@@ -141,21 +141,21 @@ void setup_audio() {
     envelope1.hold(0);
     envelope1.decay(100);
     envelope1.sustain(0.7);
-    envelope1.release(300);
+    envelope1.release(6000);
 
     envelope2.delay(0);
     envelope2.attack(400);
     envelope2.hold(0);
     envelope2.decay(100);
     envelope2.sustain(0.7);
-    envelope2.release(300);
+    envelope2.release(6000);
 
     envelope3.delay(0);
     envelope3.attack(400);
     envelope3.hold(0);
     envelope3.decay(100);
     envelope3.sustain(0.7);
-    envelope3.release(300);
+    envelope3.release(6000);
 
          
     envelope4.delay(0);
@@ -163,7 +163,7 @@ void setup_audio() {
     envelope4.hold(0);
     envelope4.decay(100);
     envelope4.sustain(0.7);
-    envelope4.release(300);
+    envelope4.release(6000);
     
     mixer5.gain(0, 1.0); // Main Oscillator
     mixer5.gain(1, 0.0); // Sub Oscillator

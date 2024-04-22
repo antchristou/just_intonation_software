@@ -5,6 +5,8 @@
 #include "draw_helpers.h"
 #include "audio_synthesis_v2.h"
 #include "matrix_mapping.h"
+#include "start_screen.h"
+#include <time.h>
 
 #include <elapsedMillis.h>
 
@@ -14,6 +16,13 @@ elapsedMillis moveTimer;
 elapsedMillis colorFader;
 const int BLINK_TIME = 500;
 const int MOVE_RESET_TIME = 300;
+const int FADE_OUT_TIME = 5000;
+elapsedMillis fadeOutTimer;
+
+elapsedMillis startColorTimer;
+const int START_BLINK_TIME = 1200;
+int currStartColor = -1;
+bool startOff = false;
 
 // for detecting state transitions
 //#define LEFT_DIR 0
@@ -36,6 +45,11 @@ int numShapes = 0;
 
 bool cursorCurrentlyOn = false;
 const bool MIDI_MODE = false;
+
+// indicates state where start is being left 
+bool transitioning = false;
+
+bool startScreen = true;
 
  uint32_t colors[] = {
   matrix.Color(178, 0, 178), matrix.Color(133,235,217),matrix.Color(92, 92, 92),matrix.Color(253,162,255),matrix.Color(0, 191, 255),matrix.Color(116, 138, 166)};
@@ -80,6 +94,7 @@ unsigned long currTime;
 void setup() {
 
   startTime = micros();
+  srand(time(0));
 
   Serial1.begin(2000000);
   while (!Serial) ; // wait for Arduino Serial Monitor
@@ -96,6 +111,8 @@ void setup() {
   setup_audio();
 
   generate_mapping();
+
+  startColorTimer = 0;
 }
 
 int x    = getMatrixWidth(); 
@@ -124,10 +141,52 @@ void copyLightsArray(uint32_t arr1[ROWS][COLUMNS], uint32_t arr2[ROWS][COLUMNS])
 void loop() {
   //Serial.println(blocksInShape);
   readJoystick(&joystickVal, &buttons);
-//  Serial.println(buttons);
   //matrix.fillScreen(0);
   //matrix.setCursor(x, 0);
   //  Serial.printf("MOVING COR %d %d %d\n", shiftMode, currCoords[0], currCoords[1]);
+    if(startScreen)
+     {
+      // blink random colors
+      if(startColorTimer > START_BLINK_TIME && startColorTimer < START_BLINK_TIME*2)
+      {
+          draw_start_screen(OFF_COL);
+         
+      }
+      else if(startColorTimer > START_BLINK_TIME*2)
+       {
+         startColorTimer = 0;
+         startOff = true;
+       }
+       
+       
+       if(startOff)
+          {
+                     
+          int random_number = -1;
+         
+          random_number =  rand() % num_colors;
+          
+          while(random_number == currStartColor)
+              random_number =  rand() % num_colors;
+            
+          draw_start_screen(colors[random_number]);
+          startOff = false;
+          currStartColor = random_number;
+          }
+         // go into gameplay if button pressed
+        if(buttons > 0)
+        {
+             draw_start_screen(WHITE_COL);
+             delay(2000);
+             
+             draw_start_screen(OFF_COL);
+             startScreen = false;
+             transitioning = true;
+        }
+      }
+     
+    if(!startScreen && !transitioning)
+    {
     if(!shiftMode)
     {
       movePixel();
@@ -168,8 +227,9 @@ void loop() {
       }
       
         // if button is held, draw shape by adding color
-       
-      if(!shiftMode && buttons == 1 && blocksInShape < 4 && 
+
+  //      Serial.printf("checking %d %d %d %d \n", shiftMode,buttons,blocksInShape,numShapes);
+      if(!transitioning && !shiftMode && buttons == 1 && blocksInShape < 4 && 
       (checkOneBlockAway(currCoords[0],currCoords[1]) || (numShapes == 0 && blocksInShape == 0) ))
       {
         if(checkIndices(currCoords[0],currCoords[1]))
@@ -266,9 +326,14 @@ void loop() {
      {
         swapTuningSystems();
      }
+     // end game 
+     else if(buttons == 2 && numShapes > 0)
+     {
+      endGame();
+     }
     
       
-     else
+     else if(!startScreen)
       {
 //        currTime = micros();
         blinkCursor();
@@ -278,6 +343,9 @@ void loop() {
 
    //   currTime = micros();
     //  matrix.show();
+    }
+    else
+      transitioning = false;
     delay(10); // todo; why is it moving eratically? 
 }
 
@@ -936,6 +1004,45 @@ void turnOnPrevious()
         draw(i,j,previousLightsOn[i][j],true);
     }
   }
+}
+
+void endGame()
+{
+  
+  // remove cursor
+  draw(currCoords[0],currCoords[1], lightsOn[currCoords[0]][currCoords[1]],true);
+
+  Serial.println("ending synths..");
+  // trigger end envelope of synths
+  turnAllOff();
+
+  
+  // fade out lights 
+  fadeOutTimer = 0;
+  int currBrightness = STARTING_BRIGHTNESS;
+  Serial.println("fading lights...");
+  while(fadeOutTimer < FADE_OUT_TIME)
+  {
+    int mappedBrightness = map((int)fadeOutTimer,0,FADE_OUT_TIME,STARTING_BRIGHTNESS,0);
+    matrix.setBrightness(mappedBrightness);
+    if(fadeOutTimer % 50 == 0)
+      matrix.show();
+  }
+
+
+  // return to start screen and clear
+  startScreen = true;
+  startColorTimer = 0;
+  delay(2000);
+  matrix.clear();
+  clearIndices();
+  clearNewShape();
+  clearLights();
+  numShapes = 0;
+  blocksInShape = 0;
+  nowPlaying  = false;
+  matrix.setBrightness(STARTING_BRIGHTNESS);
+   
 }
 //
 //void setup_audio2() {

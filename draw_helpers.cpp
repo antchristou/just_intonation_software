@@ -3,7 +3,7 @@
 byte drawingMemory[NUM_LEDS*3];         //  3 bytes per LED
 DMAMEM byte displayMemory[NUM_LEDS*12]; // 12 bytes per LED
 
-
+int STARTING_BRIGHTNESS = 10; 
 WS2812Serial matrix(NUM_LEDS, displayMemory, drawingMemory, PIN, WS2812_GRB);
 
 
@@ -43,7 +43,7 @@ void draw(int x, int y,  uint32_t color, bool doShow)
     matrix.begin();
     matrix.clear();
 //  matrix.setTextWrap(false);
-  matrix.setBrightness(10);
+  matrix.setBrightness(STARTING_BRIGHTNESS);
 //  matrix.setTextColor(initial_text_color);
 
    // testLEDs();
