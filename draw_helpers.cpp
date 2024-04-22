@@ -35,7 +35,6 @@ void draw(int x, int y,  uint32_t color, bool doShow)
     matrix.show();
 }
 
- // todo: move matrix code here, replace calls 
 
  void setup_matrix(uint32_t initial_text_color)
  {
@@ -52,7 +51,6 @@ void draw(int x, int y,  uint32_t color, bool doShow)
  
 int getMatrixWidth()
 {
-  // todo: uh hopefully this is right...
   return COLUMNS;
 }
 // note: flipped to match LEDs

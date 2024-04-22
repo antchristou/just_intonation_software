@@ -129,7 +129,7 @@
 //  for(int i = 0; i < 4; i++)
 //  {
 //    // calculate difference and then rate of change for each note
-//    differences[i] = voiceLeadChord[i]-currPitches[i]; // todo: sign?
+//    differences[i] = voiceLeadChord[i]-currPitches[i]; 
 //    rates_of_change[i] = differences[i]/SLIDE_TIME;
 //  }
 //  slideTimer = 0;

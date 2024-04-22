@@ -61,7 +61,7 @@ bool startScreen = true;
  uint32_t *oppositeColorPointer = la_monte_colors;
 
  
-// keeps track of num blocks in shape that is being drawn - 4 is max TODO for now
+// keeps track of num blocks in shape that is being drawn - 4 is max for now
 int blocksInShape = 0;
 // keep track of unique indices in currently drawn shape
 int currentShapeIndices[4][2] = {{-1,-1},{-1,-1},{-1,-1},{-1,-1}};
@@ -119,8 +119,6 @@ int x    = getMatrixWidth();
 
 int pass = 0;
 
-
-// TODO: where to set curr coords
 int currCoords[2] = {ROWS/2/getBlockSize(),COLUMNS/2/getBlockSize()};//{ROWS/2,COLUMNS/2};
 
 int prevDir = NOT_MOVING;
@@ -285,14 +283,11 @@ void loop() {
      else if(buttons == 16 && blocksInShape == 4  && (hasOverlap == true || numShapes == 0))
      {
       Serial.println("locking in...");
-      // TODO play shape
-      // TODO: figure out way to prevent spam of button - probably checking blocks in shape
-      // TODO: ...or waiting for button up 
+     
       //cycle color for next shape
       cycle_color();
       numShapes++;
       blocksInShape = 0;
-//      TODO keep track of previous shape for potential shifting  
       copyArray(currentShapeIndices,previousShapeIndices);
       hasOverlap = false;
 //      // get array of notes
@@ -346,7 +341,7 @@ void loop() {
     }
     else
       transitioning = false;
-    delay(10); // todo; why is it moving eratically? 
+    delay(10); 
 }
 
 bool checkCoords(int x, int y)
@@ -446,7 +441,6 @@ bool searchPreviousArray(int x, int y)
   }
   return false;
 }
-// TODO: hardcoded as shapes of 4 
 void clearIndices()
 {
   for(int x = 0;x<blocksInShape;x++)
@@ -471,7 +465,6 @@ void clearNewShape()
 }
 
 // when shape is submitted, ensure each point in shape is one away from another 
-// TODO: hardcoded at 4 
 //bool checkContiguous()
 //{
 //  int p0[2] = currentShapeIndice[0];
@@ -615,7 +608,7 @@ void movePixel()
  {
      
       bool outOfBounds = false;
-      // TODO: shape has 4 blocks
+      // shape has 4 blocks
       int x_shift = 0;
       int y_shift = 0;
       Serial.println("copying..");
@@ -670,7 +663,7 @@ void movePixel()
           }
           
           // light is currently part of shape, revert to earlier color
-          // TODO: incomplete shapes with shift function need to get erased 
+          
     
           for(int i =0; i < 4;i++)
           {
@@ -793,7 +786,6 @@ void blinkCursor()
         for(int z = 0; z < 4; z++)
         {
 //            Serial.printf("ok 10.. %d %d \n",newShape[z][0],newShape[z][1]);
-          // TODO: ISSUE HERE NEW SHAPE GETS OLDER SHAPE SOMEHOW
             draw(newShape[z][0],newShape[z][1],WHITE_COL,true);
        //     matrix.drawPixel(newShape[z][0],newShape[z][1],WHITE_COL);
         }
@@ -837,8 +829,7 @@ void swapTuningSystems()
   setupLattice();
   
   // slide pitches into what it represnets in new system - should always need to slide
-  // todo: ensure playing freq chord is populated 
-  // todo: ensure PSI isnt cleared somehow / bookkeeping is fully finished 
+  
   Serial.printf("indices: %d %d %d %d %d %d %d %d\n",previousShapeIndices[0][0],previousShapeIndices[0][1],previousShapeIndices[1][0],previousShapeIndices[1][1],previousShapeIndices[2][0],
   previousShapeIndices[2][1],previousShapeIndices[3][0],previousShapeIndices[3][1]);
 
@@ -882,7 +873,7 @@ for(int i = 0; i < 4;i++)
   }
   copyLightsArray(lightsOn,previousLightsOn);
   
-  // todo: swapping back 
+
   Serial.printf("Swapping to %d!\n",Lattice_TUNING);
   Serial.printf("COLOR NIMBER %d\n",colorPointer[0]);
   Serial.printf("COLOR NIMBER 2 %d\n", lightsOn[previousShapeIndices[0][0]][previousShapeIndices[0][1]]);
@@ -1041,6 +1032,8 @@ void endGame()
   numShapes = 0;
   blocksInShape = 0;
   nowPlaying  = false;
+  currCoords[0] = ROWS/2/getBlockSize();
+  currCoords[1] = COLUMNS/2/getBlockSize();
   matrix.setBrightness(STARTING_BRIGHTNESS);
    
 }

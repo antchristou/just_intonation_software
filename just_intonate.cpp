@@ -9,12 +9,11 @@
 
 
 //todo: possibly hard code this less badly...
-// change these TODO 
 const int LATTICE_X_DIM = 20;
 const int LATTICE_Y_DIM = 30;
 int Lattice_TUNING = FIVE_LIMIT_JUST;
 const double FREQ_UPPER_BOUND = 1500;
-const double FREQ_LOWER_BOUND = 120;
+const double FREQ_LOWER_BOUND = 100;
 int GEN_COUNT = 0;
 
 typedef struct {
@@ -30,7 +29,6 @@ double currTonicFreq = 440;
 //int tuning_system = FIVE_LIMIT_JUST;
 
 // ratios for calculating frequencies from base 
-// TODO: maybe change to five limit? 
 double justRatios[] = {1.0/1,17.0/16, 9.0/8,19.0/16, 5.0/4, 21.0/16, 11.0/8,3.0/2,13.0/8,27.0/16,7.0/4,15.0/8};
 
 // base tuning is by default A=440
@@ -43,7 +41,6 @@ double*chord;
 double*freqChord;
 
 // array that contains indices corresponding shape of notes traced out 
-// TODO: contains 4 elements for now
 int latticeShape[8];
 int indicesCollected = 0;
 
@@ -228,12 +225,10 @@ double calculateCentsOffset(double freq1,double freq2)
 // MPE ranges from -8192 to 8191 meaning that 
 // the perfectly exact value can't be achieved but can get very close
 // ASSUMPTION: on synth end, MPE pitch bend value is set to one whole tone 
-// TODO: 2 octaves 
 double calculateBend(double centsOffset)
 {
   // assuming that pitch band max is 1 whole step (200 cents) 
   double centIncrement = 2400.0/8191.0;
-  // TODO: this seems not accurate enough
   // calculate how many pitch bend increments approximate difference in cents;
   double doubleBend = centsOffset/centIncrement;
   // round to nearest integet as MPE only accepts integers 
@@ -321,8 +316,6 @@ int correctIntonation(int key,int note) {
   // Given scale degree relation from note to key, calculate appropriate ratio  
   double ratio = justRatios[distance];
 
-
-  // TODO: what if we modualate? then curr frequency isnt just 12 TET
   double tweleveTetFreq = midi2Freq(note);
   double desiredFreq = ratio*currTonicFreq;
   
@@ -335,25 +328,6 @@ int correctIntonation(int key,int note) {
   int bendAmount = calculateBend(centsOffset);
   return bendAmount;
 }
-
-// todo: probably need to handle at time of calculating bend at all 
-// todo: see about speed of pitch bend 
-// sort so that notes are voice lead 
-//double* voiceLead(double*chord)
-//{
-//  // if no chord is playing, just play chord as is 
-//  if(!playing)
-//    return chord;
-//   // else sort so that closest voice is in position of voice to shift to
-//  return chord;
-//  // TODO
-//}
-
-//void playChord(double* chord)
-//{
-//  // usbMIDI.sendNoteOn(selectedEntry1->closestMidiNote, 99, i);
-//   //usbMIDI.sendPitchBend(bendAmount1,i);
-//}
 
 void swapTuning()
 {
