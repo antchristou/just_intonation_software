@@ -139,6 +139,7 @@ void copyLightsArray(uint32_t arr1[ROWS][COLUMNS], uint32_t arr2[ROWS][COLUMNS])
 void loop() {
   //Serial.println(blocksInShape);
   readJoystick(&joystickVal, &buttons);
+ 
   //matrix.fillScreen(0);
   //matrix.setCursor(x, 0);
   //  Serial.printf("MOVING COR %d %d %d\n", shiftMode, currCoords[0], currCoords[1]);
@@ -194,7 +195,7 @@ void loop() {
 
       // if parallel shift button is held, switch modes 
       // shift current coords to most recently drawn shape
-      if(buttons == 4 && !shiftMode && numShapes != 0)
+      if(buttons == 16 && !shiftMode && numShapes != 0)
       {
 
         draw(currCoords[0],currCoords[1],previousLightsOn[currCoords[0]][currCoords[1]],true);
@@ -227,7 +228,7 @@ void loop() {
         // if button is held, draw shape by adding color
 
   //      Serial.printf("checking %d %d %d %d \n", shiftMode,buttons,blocksInShape,numShapes);
-      if(!transitioning && !shiftMode && buttons == 1 && blocksInShape < 4 && 
+      if(!transitioning && !shiftMode && buttons == 8 && blocksInShape < 4 && 
       (checkOneBlockAway(currCoords[0],currCoords[1]) || (numShapes == 0 && blocksInShape == 0) ))
       {
         if(checkIndices(currCoords[0],currCoords[1]))
@@ -246,7 +247,7 @@ void loop() {
         }
       }
      // submit shape in shift shape mode
-     if(buttons == 16 && shiftMode)
+     if(buttons == 1 && shiftMode)
      {
       for(int i = 0; i < 4; i++)
       {
@@ -280,7 +281,7 @@ void loop() {
 
      }
      // lock shape in, sonify 
-     else if(buttons == 16 && blocksInShape == 4  && (hasOverlap == true || numShapes == 0))
+     else if(buttons == 1 && blocksInShape == 4  && (hasOverlap == true || numShapes == 0))
      {
       Serial.println("locking in...");
      
@@ -317,12 +318,12 @@ void loop() {
      }
      // shift tuning systems, trigger transition
      // wipe board in flash of light, except for most recent shape 
-     else if(buttons == 8 && numShapes > 0)
+     else if(buttons == 2 && numShapes > 0)
      {
         swapTuningSystems();
      }
      // end game 
-     else if(buttons == 2 && numShapes > 0)
+     else if(buttons == 4 && numShapes > 0)
      {
       endGame();
      }

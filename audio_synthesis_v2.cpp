@@ -122,7 +122,7 @@ void setup_audio() {
   AudioMemory(300);
   
   sgtl5000_1.enable();
-  sgtl5000_1.volume(0.307); // careful with your ears..!
+  sgtl5000_1.volume(0.707); // careful with your ears..!
 
 
   // Set up the flange effect:
