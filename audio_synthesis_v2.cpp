@@ -122,7 +122,7 @@ void setup_audio() {
   AudioMemory(300);
   
   sgtl5000_1.enable();
-  sgtl5000_1.volume(0.707); // careful with your ears..!
+  sgtl5000_1.volume(0.307); // careful with your ears..!
 
 
   // Set up the flange effect:
@@ -137,21 +137,21 @@ void setup_audio() {
 //    flange1.voices(s_idx,s_depth,.5);
 //    flange2.voices(s_idx,s_depth,.7);
     envelope1.delay(0);
-    envelope1.attack(400);
+    envelope1.attack(800);
     envelope1.hold(0);
     envelope1.decay(100);
     envelope1.sustain(0.7);
     envelope1.release(6000);
 
     envelope2.delay(0);
-    envelope2.attack(400);
+    envelope2.attack(800);
     envelope2.hold(0);
     envelope2.decay(100);
     envelope2.sustain(0.7);
     envelope2.release(6000);
 
     envelope3.delay(0);
-    envelope3.attack(400);
+    envelope3.attack(800);
     envelope3.hold(0);
     envelope3.decay(100);
     envelope3.sustain(0.7);
@@ -159,7 +159,7 @@ void setup_audio() {
 
          
     envelope4.delay(0);
-    envelope4.attack(400);
+    envelope4.attack(800);
     envelope4.hold(0);
     envelope4.decay(100);
     envelope4.sustain(0.7);

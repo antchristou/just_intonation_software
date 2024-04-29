@@ -1,5 +1,3 @@
-
-
 #include "joystick.h"
 #include "just_intonate.h"
 #include "draw_helpers.h"
@@ -16,7 +14,7 @@ elapsedMillis moveTimer;
 elapsedMillis colorFader;
 const int BLINK_TIME = 500;
 const int MOVE_RESET_TIME = 300;
-const int FADE_OUT_TIME = 5000;
+const int FADE_OUT_TIME = 8000;
 elapsedMillis fadeOutTimer;
 
 elapsedMillis startColorTimer;
@@ -45,6 +43,7 @@ int numShapes = 0;
 
 bool cursorCurrentlyOn = false;
 const bool MIDI_MODE = false;
+bool currentlyMirroring = false;
 
 // indicates state where start is being left 
 bool transitioning = false;
@@ -97,7 +96,7 @@ void setup() {
   srand(time(0));
 
   Serial1.begin(2000000);
-  while (!Serial) ; // wait for Arduino Serial Monitor
+ // while (!Serial) ; // wait for Arduino Serial Monitor
 
   setup_matrix(colorPointer[0]);
   Serial.println("\n\nUSB Host Joystick Testing");
@@ -137,9 +136,8 @@ void copyLightsArray(uint32_t arr1[ROWS][COLUMNS], uint32_t arr2[ROWS][COLUMNS])
 
 
 void loop() {
-  //Serial.println(blocksInShape);
   readJoystick(&joystickVal, &buttons);
- 
+
   //matrix.fillScreen(0);
   //matrix.setCursor(x, 0);
   //  Serial.printf("MOVING COR %d %d %d\n", shiftMode, currCoords[0], currCoords[1]);
@@ -273,12 +271,18 @@ void loop() {
           }
           nowPlaying = true;
           
+         currCoords[0] = previousShapeIndices[0][0];
+        currCoords[1] = previousShapeIndices[0][1];
+
         
           copyLightsArray(lightsOn,previousLightsOn);
           clearNewShape();
 
-            Serial.printf("COLOR AS OF SHIFT SHAPE SUBMIT %d",lightsOn[shiftShapeIndices[0][0]][shiftShapeIndices[0][1]]);      
+          Serial.printf("COLOR AS OF SHIFT SHAPE SUBMIT %d",lightsOn[shiftShapeIndices[0][0]][shiftShapeIndices[0][1]]);      
+          if(currentlyMirroring == true)
+            currentlyMirroring = false;
 
+          
      }
      // lock shape in, sonify 
      else if(buttons == 1 && blocksInShape == 4  && (hasOverlap == true || numShapes == 0))
@@ -326,6 +330,18 @@ void loop() {
      else if(buttons == 4 && numShapes > 0)
      {
       endGame();
+     }
+     // mirror
+     else if(buttons == 128 && numShapes > 0 && !currentlyMirroring)
+     {
+      Serial.println("MIRRORING");
+      mirror();
+     
+     }
+     else if(buttons == 64 && numShapes > 0)
+     {
+      Serial.println("ROTATING");
+      rotate();
      }
     
       
@@ -1000,6 +1016,7 @@ void turnOnPrevious()
 
 void endGame()
 {
+
   
   // remove cursor
   draw(currCoords[0],currCoords[1], lightsOn[currCoords[0]][currCoords[1]],true);
@@ -1007,6 +1024,24 @@ void endGame()
   Serial.println("ending synths..");
   // trigger end envelope of synths
   turnAllOff();
+
+  // change back to 5 limit
+
+  numShapes = 1;
+  if(Lattice_TUNING != FIVE_LIMIT_JUST)
+  {
+    initMatrix();
+    swapTuning();
+    setupLattice();
+  
+    curr_color = 1;
+    // swap color pointers 
+    uint32_t *temp = colorPointer;
+    colorPointer = oppositeColorPointer;
+    oppositeColorPointer = temp;
+  }
+
+  // end code to change back to 5 limit ^ 
 
   
   // fade out lights 
@@ -1025,7 +1060,7 @@ void endGame()
   // return to start screen and clear
   startScreen = true;
   startColorTimer = 0;
-  delay(2000);
+  delay(5000);
   matrix.clear();
   clearIndices();
   clearNewShape();
@@ -1036,7 +1071,166 @@ void endGame()
   currCoords[0] = ROWS/2/getBlockSize();
   currCoords[1] = COLUMNS/2/getBlockSize();
   matrix.setBrightness(STARTING_BRIGHTNESS);
+
+}
+
+void mirror()
+{
+   draw(currCoords[0],currCoords[1],previousLightsOn[currCoords[0]][currCoords[1]],true);
+        //revert colors to before current shape was drawn
+        turnOnPrevious();
+        copyLightsArray(previousLightsOn,lightsOn);
+        shiftMode = true;
    
+   
+        currCoords[0] = previousShapeIndices[0][0];
+        currCoords[1] = previousShapeIndices[0][1];
+        // turn off cursor
+       
+        // keep track of previously drawn shape
+        // mirror shape and use that as shift shape 
+        mirrorCoords(previousShapeIndices,shiftShapeIndices);
+      //  copyArray(previousShapeIndices,shiftShapeIndices);
+        copyArray(shiftShapeIndices,newShape);
+
+        currentlyMirroring = true;
+
+}
+
+void mirrorCoords(int previousShapeIndices[4][2],int shiftShapeIndices[4][2])
+{
+  // mirror coords towards center axis 
+  int line_x = 5; // center line 
+  copyArray(previousShapeIndices,shiftShapeIndices);
+
+  Serial.printf("OLD MIRROR COORDS %d %d %d %d %d %d %d %d \n",shiftShapeIndices[0][0],shiftShapeIndices[0][1],
+  shiftShapeIndices[1][0],shiftShapeIndices[1][1],shiftShapeIndices[2][0],shiftShapeIndices[2][1],shiftShapeIndices[3][0],
+  shiftShapeIndices[3][1]);
+   for (int i = 0; i < 4; i++) {
+        shiftShapeIndices[i][1] = (2 * line_x - shiftShapeIndices[i][1])-1; // Reflect x-coordinate
+    }
+
+  Serial.printf("NEW MIRROR COORDS %d %d %d %d %d %d %d %d \n",shiftShapeIndices[0][0],shiftShapeIndices[0][1],
+  shiftShapeIndices[1][0],shiftShapeIndices[1][1],shiftShapeIndices[2][0],shiftShapeIndices[2][1],shiftShapeIndices[3][0],
+  shiftShapeIndices[3][1]);
+
+    
+}
+
+void rotate()
+{
+
+   
+        // keep track of previously drawn shape
+        // rotate 90 degrees clockwise
+        bool rotatePassed = rotateCoords(previousShapeIndices,shiftShapeIndices);
+        if(rotatePassed)
+        {
+          shiftMode = true;
+        
+           draw(currCoords[0],currCoords[1],previousLightsOn[currCoords[0]][currCoords[1]],true);
+        //revert colors to before current shape was drawn
+        turnOnPrevious();
+        copyLightsArray(previousLightsOn,lightsOn);
+     
+   
+        currCoords[0] = previousShapeIndices[0][0];
+        currCoords[1] = previousShapeIndices[0][1];
+        // turn off cursor
+     
+        copyArray(shiftShapeIndices,newShape);
+
+        }
+  
+}
+
+bool rotateCoords(int previousShapeIndices[4][2],int shiftShapeIndices[4][2])
+{
+  // rotate 90 degrees clockwise UNLESS WOULD BE OUT OF BOUND
+  
+
+  Serial.printf("OLD ROTATE COORDS %d %d %d %d %d %d %d %d \n",previousShapeIndices[0][0],previousShapeIndices[0][1],
+   previousShapeIndices[1][0],previousShapeIndices[1][1],previousShapeIndices[2][0],previousShapeIndices[2][1],previousShapeIndices[3][0],
+  previousShapeIndices[3][1]);
+
+
+   // make first point the rotation axis
+  int pivot_x =  previousShapeIndices[0][0];
+  int pivot_y =  previousShapeIndices[0][1];
+  
+  int rotateCoords[4][2];
+
+    // Rotate coordinates 90 degrees clockwise
+    for (int i = 0; i < 4; i++) {
+   
+        int dx = previousShapeIndices[i][0] - pivot_x;
+        int dy = previousShapeIndices[i][1] - pivot_y;
+        rotateCoords[i][0] = pivot_x + dy;
+        rotateCoords[i][1] = pivot_y - dx;
+    }
+
+    
+   Serial.printf("TRYING NEW ROTATE COORDS %d %d %d %d %d %d %d %d \n",rotateCoords[0][0],rotateCoords[0][1],
+   rotateCoords[1][0],rotateCoords[1][1],rotateCoords[2][0],rotateCoords[2][1],rotateCoords[3][0],
+  rotateCoords[3][1]);
+
+   // check if rotation is in bounds
+   bool rotateTest = true;
+   for(int i = 0; i < 4; i++)
+    {
+      if(!checkCoords(rotateCoords[i][0],rotateCoords[i][1]))
+        rotateTest = false;
+    }
+    if(rotateTest)
+    {
+      copyArray(previousShapeIndices,shiftShapeIndices);
+      Serial.println("PASSED ROTATION CHECK");
+      for(int i = 0; i < 4; i++)
+      {
+      shiftShapeIndices[i][0] =  rotateCoords[i][0];
+      shiftShapeIndices[i][1] =  rotateCoords[i][1];
+      }
+
+    copyArray(shiftShapeIndices,newShape);
+    }
+    else
+    {
+       Serial.println("INITIALLY FAILED ROTATION CHECK");
+      // move rotation over so it fits 
+       
+      int maxOutOfBoundsX = -1;
+      int maxOutOfBoundsY = -1;
+      // calculate amount out of bounds
+      for(int i = 0; i < 4; i++)
+      {
+        if(shiftShapeIndices[i][0] < 0 || shiftShapeIndices[i][0] > 9)
+        {
+          if(abs(shiftShapeIndices[i][0]) > maxOutOfBoundsX)
+            maxOutOfBoundsX = shiftShapeIndices[i][0];
+        }
+        if(shiftShapeIndices[i][1] < 0 || shiftShapeIndices[i][1] > 4)
+        {
+          if(abs(shiftShapeIndices[i][1]) > maxOutOfBoundsY)
+            maxOutOfBoundsY = shiftShapeIndices[i][1];
+        }
+      }
+      Serial.printf("correction: %d %d\n",maxOutOfBoundsX,maxOutOfBoundsY);
+      for(int i = 0; i<4;i++)
+      {
+         shiftShapeIndices[i][0] =  rotateCoords[i][0]+maxOutOfBoundsX;
+         shiftShapeIndices[i][1] =  rotateCoords[i][1]+maxOutOfBoundsY;
+      }
+     Serial.println("MOVED SHAPE OVER TO FIT");
+      
+    copyArray(previousShapeIndices,shiftShapeIndices);
+    copyArray(shiftShapeIndices,newShape);
+      
+      
+    }
+      
+   
+
+   return true;
 }
 //
 //void setup_audio2() {
