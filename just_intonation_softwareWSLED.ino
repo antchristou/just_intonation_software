@@ -768,8 +768,7 @@ void deleteShape()
 
 void blinkCursor()
 {
-
-
+  
   if(blinkTimer >= BLINK_TIME*1.5)
       blinkTimer = 0;
   else if (blinkTimer >= BLINK_TIME) 
